@@ -7,28 +7,59 @@ services:
     restart: always
     ports:
       - "27017:27017"
+    networks:
+      - todo-network
     volumes:
       - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
-    build: ./todo_backend
+    build: 
+      context: ./todo_backend
+      dockerfile: Dockerfile
     container_name: backend
     restart: always
     ports:
       - "5000:5000"
+    networks:
+      - todo-network
     environment:
-      - MONGO_URI=mongodb://mongo:27017/Todo
+      MONGO_URI: mongodb://mongo:27017/Todo
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"] # Make sure you have a /health endpoint
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   frontend:
-    build: ./todo_frontend
+    build: 
+      context: ./todo_frontend
+      dockerfile: Dockerfile
     container_name: frontend
     restart: always
     ports:
       - "3000:3000"
+    networks:
+      - todo-network
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   mongo-data:
+
+networks:
+  todo-network:
+    driver: bridge

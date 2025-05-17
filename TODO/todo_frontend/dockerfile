@@ -1,5 +1,5 @@
-# Use Node.js LTS version
-FROM node:16-alpine
+# Stage 1: Build the application
+FROM node:16-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -8,11 +8,19 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Copy the rest of the application code
+# Copy source code and build the app
 COPY . .
+RUN npm run build
 
-# Expose the frontend port
-EXPOSE 3000
+# Stage 2: Serve the application
+FROM nginx:alpine
+WORKDIR /usr/share/nginx/html
 
-# Start the frontend application
-CMD ["npm", "start"]
+# Copy build artifacts from builder stage
+COPY --from=builder /app/build .
+
+# Expose port 80 for Nginx
+EXPOSE 80
+
+# Start Nginx server
+CMD ["nginx", "-g", "daemon off;"]
