@@ -1,27 +1,13 @@
-# Stage 1: Build the application
-FROM node:16-alpine AS builder
-
-# Set the working directory
-WORKDIR /app
-
-# Install dependencies separately for better caching
-COPY package*.json ./
-RUN npm install
-
-# Copy the application code
-COPY . .
-
-# Stage 2: Run the application
 FROM node:16-alpine
 
-# Set the working directory
 WORKDIR /app
 
-# Copy only the required files from the builder stage
-COPY --from=builder /app .
+COPY package*.json ./
 
-# Expose the backend port
+RUN npm install
+
+COPY . .
+
 EXPOSE 5000
 
-# Start the backend server
 CMD ["npm", "start"]
